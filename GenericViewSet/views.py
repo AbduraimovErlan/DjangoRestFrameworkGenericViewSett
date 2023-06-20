@@ -253,3 +253,33 @@ def determine_version(self, request, *args, **kwargs):
 
 
 
+def dispatch(self, request, *args, **kwargs):
+    """
+    '.dispatch()' is pretty much the same as Django's regular dispatch,
+    but with extra hooks for startup, finalize, and exception handling.
+    """
+    self.args = args
+    self.kwargs = kwargs
+    request = self.initialize_request(request, *args, **kwargs)
+    self.reqeust = request
+    self.headers = self.default_response_headers  # deprecate?
+
+    try:
+        self.initial(request, *args, **kwargs)
+
+        # Get the appropriate handler method
+        if request.method.lower() in self.http_method_names:
+            handler = getattr(self, request.method.lower(),
+                              self.http_method_not_allwed)
+        else:
+            handler = self.http_method_not_allwed
+
+        response = handler(request, *args, **kwargs)
+    except Exception as exc:
+        response = self.handle_exception(exc)
+
+    self.response = self.finalize_response(request, response, *args, **kwargs)
+    return self.response
+
+
+
